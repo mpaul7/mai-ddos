@@ -41,10 +41,10 @@ class PySharkExtractor(BaseExtractor):
             Dict[str, Any]: Initial flow statistics
         """
         return {
-            'src_ip': '',
-            'src_port': '',
-            'dst_ip': '',
-            'dst_port': '',
+            'sip': '',
+            'sport': '',
+            'dip': '',
+            'dport': '',
             'protocol': '',
             'first_timestamp': timestamp,
             'last_timestamp': timestamp,
@@ -57,8 +57,8 @@ class PySharkExtractor(BaseExtractor):
             'flow_duration': 0,
             'total_dns_queries': 0,
             'total_dns_responses': 0,
-            'dns_query': '',
-            'dns_answer': '',
+            'dns_query': [],
+            'dns_answer': [],
             'dns_rcode': [],
             'dns_rcode_name': [],
             'dns_query_response_delays': [],
@@ -115,10 +115,10 @@ class PySharkExtractor(BaseExtractor):
                     is_forward = True
                     flows[flow_key] = self._init_flow_stats(timestamp)
                     flows[flow_key].update({
-                        'src_ip': sip,
-                        'src_port': sport,
-                        'dst_ip': dip,
-                        'dst_port': dport,
+                        'sip': sip,
+                        'sport': sport,
+                        'dip': dip,
+                        'dport': dport,
                         'protocol': protocol
                     })
                     logger.debug(f"Created new flow: {flow_key}")
@@ -141,31 +141,38 @@ class PySharkExtractor(BaseExtractor):
                     dns_flags_int = int(dns_flags, 16)
                     is_response = (dns_flags_int & 0x8000) != 0
 
-                    rcode = getattr(pkt.dns, 'rcode', '0')
-                    rcode_text = DNS_RCODE_MAP.get(int(rcode), 'Unknown')
-                    flow['dns_rcode_name'].append(f'{rcode}_{rcode_text}')
-                    flow['dns_rcode'].append(rcode)
+                    if is_response:  # DNS response
+                        
+                        # if hasattr(pkt, 'dns'):
+                        #     print(f"DNS Response: {dns_flags}  {dns_flags_int}  {is_response}  {dns_flags_int & 0x000F}")
+                        #     if hasattr(pkt.dns, 'rcode'):
+                        #         print(pkt.dns.rcode)
+                        #         rcode = int(pkt.dns.rcode)
+                        #         # print(f"RCODE: {rcode}, Meaning: {DNS_RCODE_MAP.get(rcode, 'Unknown')}")
+                        #     else:
+                        #         rcode = '0'
+                        #     print(rcode)    
+                            # rcode = getattr(pkt.dns, 'rcode', '0')
+                        # print(pkt.dns.rcode)
+                        rcode = dns_flags_int & 0x000F
+                        rcode_text = DNS_RCODE_MAP.get(int(rcode), 'Unknown')
+                        flow['dns_rcode_name'].append(f'{rcode}_{rcode_text}')
+                        flow['dns_rcode'].append(rcode)
 
-                    if not is_response:  # DNS query
-                        flow['total_dns_queries'] += 1
-                        if not flow['dns_query'] and hasattr(pkt.dns, 'qry_name'):
-                            flow['dns_query'] = pkt.dns.qry_name
-                        if hasattr(pkt.dns, 'id'):
-                            flow['dpending_queries'].append({
-                                'id': pkt.dns.id,
-                                'query_time': timestamp
-                            })
-
-                    else:  # DNS response
                         flow['total_dns_responses'] += 1
-                        if not flow['dns_answer']:
-                            qry_type = getattr(pkt.dns, 'qry_type', '0')
-                            if qry_type == '1' and hasattr(pkt.dns, 'a'):
-                                flow['dns_answer'] = pkt.dns.a
-                            elif qry_type == '28' and hasattr(pkt.dns, 'aaaa'):
-                                flow['dns_answer'] = pkt.dns.aaaa
-                            elif qry_type == '5' and hasattr(pkt.dns, 'cname'):
-                                flow['dns_answer'] = pkt.dns.cname
+                        qry_type = getattr(pkt.dns, 'qry_type', '0')
+                        answers = []
+
+                        if qry_type == '1' and hasattr(pkt.dns, 'a'):
+                            answers.extend(pkt.dns.a.split(','))
+                        elif qry_type == '28' and hasattr(pkt.dns, 'aaaa'):
+                            answers.extend(pkt.dns.aaaa.split(','))
+                        elif qry_type == '5' and hasattr(pkt.dns, 'cname'):
+                            answers.extend(pkt.dns.cname.split(','))
+
+                        for answer in answers:
+                            if answer and answer not in flow['dns_answer']:
+                                flow['dns_answer'].append(answer)
 
                         if hasattr(pkt.dns, 'id'):
                             matching_query = next(
@@ -183,13 +190,25 @@ class PySharkExtractor(BaseExtractor):
                                 })
                                 flow['dpending_queries'].remove(matching_query)
 
+                    else:  # DNS query
+                        flow['total_dns_queries'] += 1
+                        if hasattr(pkt.dns, 'qry_name'):
+                            query_name = pkt.dns.qry_name
+                            if query_name not in flow['dns_query']:
+                                flow['dns_query'].append(query_name)
+                        if hasattr(pkt.dns, 'id'):
+                            flow['dpending_queries'].append({
+                                'id': pkt.dns.id,
+                                'query_time': timestamp
+                            })
+
             except Exception as e:
                 logger.error(f"Error processing packet {packet_count}: {str(e)}")
                 continue
 
         # logger.info(f"Completed DNS flow extraction. Processed {packet_count} packets, found {len(flows)} flows")
         return flows
-    
+
     def extract(self, pcap_file: str) -> pd.DataFrame:
         """Extract DNS flow features from a PCAP file.
         
@@ -209,7 +228,7 @@ class PySharkExtractor(BaseExtractor):
             logger.warning("No DNS flows found in the PCAP file")
             # Return empty DataFrame with correct columns if no flows found
             return pd.DataFrame(columns=[
-                'src_ip', 'src_port', 'dst_ip', 'dst_port', 'protocol',
+                'sip', 'sport', 'dip', 'dport', 'protocol',
                 'first_timestamp', 'last_timestamp', 'fwd_packets', 'bwd_packets',
                 'fwd_bytes', 'bwd_bytes', 'total_packets', 'total_bytes',
                 'flow_duration', 'total_dns_queries', 'total_dns_responses',

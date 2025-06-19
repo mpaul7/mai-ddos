@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import logging
 from .core import extract_data
-from .utils.common import pyshark_columns
+from .utils.common import pyshark_columns, aggregated_columns
 from .utils.logger import setup_logger
 
 # Configure logging
@@ -35,20 +35,25 @@ def ddos_analyze(pcap, output, verbose):
     logger.info(f"Starting PCAP file: {pcap}")
     logger.debug(f"Output will be saved to: {output}")
     
-    df = extract_data(pcap)
-    logger.info(f"Found  {len(df)} DNS flows")
+    df_bucketized, df_aggregated = extract_data(pcap)
+    logger.info(f"Found  {len(df_aggregated)} DNS flows")
     
     # Ensure output directory exists
     output_path = Path(output)
     if output_path.is_dir():
         # If output is a directory, create a filename based on the input pcap
         pcap_name = Path(pcap).stem
-        output_path = output_path / f"{pcap_name}_dns_flows.csv"
+        output_path = output_path / f"{pcap_name}_dns_flows_bucketized.csv"
         logger.debug(f"Output is a directory, will save to: {output_path}")
+    
     
     # Create parent directories if they don't exist
     output_path.parent.mkdir(parents=True, exist_ok=True)
     logger.debug(f"Ensured output directory exists: {output_path.parent}")
     
     logger.info(f"Saving results to: {output_path}")
-    df.to_csv(output_path, index=False, columns=pyshark_columns)
+    df_bucketized.to_csv(output_path, index=False, columns=pyshark_columns)
+
+    output_path = output_path.parent / f"{pcap_name}_dns_flows_aggregated.csv"
+    logger.info(f"Saving results to: {output_path}")
+    df_aggregated.to_csv(output_path, index=False, columns=aggregated_columns)

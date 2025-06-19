@@ -31,7 +31,6 @@ setuptools.setup(
         "click>=8.0.0",
         "pandas>=1.3.0",
         "pyshark>=0.5.3",
-        "nfstream>=6.5.1",
         "scikit-learn>=1.0.0",
     ],
     entry_points={

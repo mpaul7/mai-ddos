@@ -7,8 +7,9 @@ class Bucketize:
 
 
     def bucketize(self):
-        
-        df = self.df.sort_values(by='first_timestamp', ascending=True)
+        df = self.df.copy()
+        df['first_timestamp'] = (df['first_timestamp'] // 1_000_000).astype(int)
+        df = df.sort_values(by='first_timestamp', ascending=True)
         
         df['time_difference_seconds'] = df['first_timestamp'] - df['first_timestamp'].iloc[0]
         
@@ -22,5 +23,7 @@ class Bucketize:
             labels=range(len(bins)-1),
             right=True
         )
+
+        df['bucket'].iloc[0] = 0
         
         return df
