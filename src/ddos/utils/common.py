@@ -1,4 +1,4 @@
-pyshark_columns = [ 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'protocol', 
+pyshark_columns = [ 'bucket', 'time_difference_seconds', 'first_timestamp', 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'protocol', 
                     'fwd_packets', 'bwd_packets', 'total_packets',
                     'fwd_bytes', 'bwd_bytes', 'total_bytes', 
                     'total_dns_queries', 'total_dns_responses', 

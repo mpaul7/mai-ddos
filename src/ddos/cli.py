@@ -32,7 +32,7 @@ def ddos_analyze(pcap, output, verbose):
     if verbose:
         logger.setLevel(logging.DEBUG)
         
-    logger.info(f"Starting analysis of PCAP file: {pcap}")
+    logger.info(f"Starting PCAP file: {pcap}")
     logger.debug(f"Output will be saved to: {output}")
     
     df = extract_data(pcap)

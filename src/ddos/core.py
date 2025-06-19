@@ -1,7 +1,7 @@
-"""Core functionality for DDoS detection."""
-import pandas as pd
-import pyshark
+
+
 from .extractors.packet_extraction import PCAPExtract
+from .bucketize.bucketize import Bucketize
 
 def extract_data(pcap_path):
     """Extract relevant features from a PCAP file.
@@ -12,7 +12,13 @@ def extract_data(pcap_path):
     Returns:
         pandas.DataFrame: Extracted features
     """
+    # extract the data
     extractor = PCAPExtract()
     df = extractor.extract_data(pcap_path)
     
+    # bucketize the data
+    bucketizer = Bucketize(df)
+    df = bucketizer.bucketize()
+    
     return df
+
