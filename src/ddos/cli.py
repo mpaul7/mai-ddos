@@ -35,7 +35,7 @@ def ddos_analyze(pcap, output, verbose):
     logger.info(f"Starting PCAP file: {pcap}")
     logger.debug(f"Output will be saved to: {output}")
     
-    df_bucketized, df_aggregated = extract_data(pcap)
+    df, df_bucketized, df_aggregated = extract_data(pcap)
     logger.info(f"Found  {len(df_aggregated)} DNS flows")
     
     # Ensure output directory exists
@@ -57,3 +57,7 @@ def ddos_analyze(pcap, output, verbose):
     output_path = output_path.parent / f"{pcap_name}_dns_flows_aggregated.csv"
     logger.info(f"Saving results to: {output_path}")
     df_aggregated.to_csv(output_path, index=False, columns=aggregated_columns)
+
+    output_path = output_path.parent / f"{pcap_name}_dns_flows_original.csv"
+    logger.info(f"Saving results to: {output_path}")
+    df.to_csv(output_path, index=False)

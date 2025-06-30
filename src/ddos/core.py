@@ -17,21 +17,28 @@ def extract_data(pcap_path):
     # extract the data
     extractor = PCAPExtract()
     df = extractor.extract_data(pcap_path)
+    df.to_csv('df.csv', index=False)
 
     def correct_dns_direction(row):
         if row['dport'] != 53:
-            # Swap IPs
-            row['sip'], row['dip'] = row['dip'], row['sip']
-            # Swap ports
-            row['sport'], row['dport'] = row['dport'], row['sport']
-            # Swap forward/backward packet & byte values
-            row['fwd_packets'], row['bwd_packets'] = row['bwd_packets'], row['fwd_packets']
-            row['fwd_bytes'], row['bwd_bytes'] = row['bwd_bytes'], row['fwd_bytes']
+            return {
+                'sip': row['dip'],
+                'sport': row['dport'],
+                'dip': row['sip'],
+                'dport': row['sport'],
+                'protocol': row['protocol'],
+                'fwd_packets': row['bwd_packets'],
+                'bwd_packets': row['fwd_packets'],
+                'fwd_bytes': row['bwd_bytes'],
+                'bwd_bytes': row['fwd_bytes']
+            }
         return row
 
+
 # Apply the correction
-    df = df.apply(correct_dns_direction, axis=1)
-    # df = ip_swap(df)
+    # df = df.apply(correct_dns_direction, axis=1, result_type='expand')
+
+    df = ip_swap(df)
     
     # bucketize the data
     bucketizer = Bucketize(df)
@@ -42,4 +49,4 @@ def extract_data(pcap_path):
     df_aggregated = aggregator.aggregate()
     print(df_aggregated.columns)
     
-    return  df_bucketized, df_aggregated
+    return  df, df_bucketized, df_aggregated

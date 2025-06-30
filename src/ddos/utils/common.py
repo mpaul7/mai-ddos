@@ -16,7 +16,8 @@ pyshark_columns = [ 'bucket', 'time_difference_seconds', 'first_timestamp', 'las
 
 aggregated_columns = [ 'bucket', 
 # 'first_timestamp_min', 'last_timestamp_max', 
-'source_ip_count', 'source_ip_unique', 'desination_ip_unique', 'dns_query_response_pairs', 'dns_query_response_count', 'dns_flow_duration',
+'source_ip_count', 'source_ip_unique', 'desination_ip_unique', 'conversation_counts', 'dns_flows_count', 
+'dns_query_response_count', 'dns_flow_duration',
  'dns_query_response_delays_agg', 'dns_fwd_bytes', 'dns_bwd_bytes', 'dns_fwd_packets', 'dns_bwd_packets'
 # 'destination_ip_count', 
                     #   'source_port_count', 'destination_port_count', 'protocol_count', 

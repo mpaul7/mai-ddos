@@ -96,10 +96,10 @@ class PySharkExtractor(BaseExtractor):
                 if protocol != '17' or not hasattr(pkt, 'udp'):
                     continue
 
-                sport = pkt.udp.srcport
-                dport = pkt.udp.dstport
+                sport = int(pkt.udp.srcport)
+                dport = int(pkt.udp.dstport)
 
-                if sport != '53' and dport != '53':
+                if sport != 53 and dport != 53:
                     continue
 
                 fwd_key, bwd_key = self._get_flow_key(sip, sport, dip, dport, protocol)
